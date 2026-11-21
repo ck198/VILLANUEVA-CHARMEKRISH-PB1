@@ -1,0 +1,54 @@
+// SPDX-License-Identifier: MIT
+// License ng smart contract
+pragma solidity ^0.8.24;
+// Version ng Solidity na gagamitin
+
+//Smart contract para sa attendance record
+contract AttendanceRecord {
+    address public instructor;
+    string public courseTitle;
+//Tinitignan kung yung student ay nakapag attendance na, true ito kapag present, false naman to kapag wala pa
+    mapping(address => bool) public hasAttended;
+    address[] public attendees;
+
+//Event na ginagawa kapag successful recorded ang attendance
+    event AttendanceRecorded(address indexed student, uint256 timestamp);
+
+//Nag r-run ito sa isang beses kapag may dineploy ang contract
+    constructor(string memory _courseTitle) {
+        instructor = msg.sender;
+        courseTitle = _courseTitle;
+    }
+
+//Ito yung nag eensure na yung instructor lamang ang makakagamit ng function na may ganitong modifier
+    modifier onlyInstructor() {
+        require(msg.sender == instructor, "Only the instructor can perform this action.");
+        _;
+    }
+
+//Ito yung gamit para mag record ng attendance ng student, instructor lang ang dapat maka access neto
+    function recordAttendance(address _student) external onlyInstructor {
+        require(_student != address(0), "Invalid student address.");
+        require(!hasAttended[_student], "Student is already recorded.");
+
+//Dito naman markado yung student kapag present at nag dadagdag ng student sa listahan ng attendees
+        hasAttended[_student] = true;
+        attendees.push(_student);
+
+//Sya yung nag lalabas ng event kapag successful and attendance recording
+        emit AttendanceRecorded(_student, block.timestamp);
+    }
+
+
+//Ito naman ay paraan kung paano malaman kung ilang students ang present,yung view
+//nag babasa ng data at wala itong binabago na blockchain data
+    function getAttendeeCount() external view returns (uint256) {
+        return attendees.length;
+    }
+
+
+//Para malman kung present yung isang student
+    function isAttending(address _student) external view returns (bool) {
+        return hasAttended[_student];
+    }
+}
